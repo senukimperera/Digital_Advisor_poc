@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import WelcomePage from './screens/welcomePage';
 import ScanQRScreen from './screens/ScanQRScreen';
 import OnboardScreen from './screens/OnboardScreen';
-import VerificationScreen from './screens/verificationScreen.jsx';
+import VerificationScreen from './screens/VerificationScreen.jsx';
 import DPPScreen from './screens/DPPScreen';
 import MapScreen from './screens/MapScreen';
 import CCMapScreen from './screens/CCMapScreen';
