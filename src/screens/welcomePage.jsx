@@ -9,13 +9,13 @@ const WelcomePage = () => {
   const theme = isDark ? darkTheme : lightTheme;
 
   const handleGetStarted = () => {
-    navigate('/scanqrScreen');
+    navigate('/onboard', { state: { isDark } });
   };
 
   return (
     <div 
       className="min-h-screen flex flex-col px-6 pt-4"
-      style={{ backgroundColor: theme.background }}
+      style={{ backgroundColor: theme.background2 }}
     >
       {/* Theme Toggle */}
       <div className="flex justify-end items-center mb-2">

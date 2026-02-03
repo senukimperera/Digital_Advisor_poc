@@ -1,266 +1,133 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
-import { Moon, Sun, ChevronLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Moon, Sun, ChevronLeft, CheckIcon, Menu } from 'lucide-react';
 import { darkTheme, lightTheme } from '../components/theme';
+import QRImage from '../assets/QR.png';
+import BottomNavbar from '../components/BottomNavbar';
+import MenuSidebar from '../components/MenuSidebar';
 
 const VerificationScreen = () => {
-  const [isDark, setIsDark] = useState(true);
-  const [scanProgress, setScanProgress] = useState(0);
-  const [isScanning, setIsScanning] = useState(false);
-  const [cameraPermission, setCameraPermission] = useState(null);
-  const [errorMessage, setErrorMessage] = useState('');
-  const theme = isDark ? darkTheme : lightTheme;
+  const location = useLocation();
+  const [isDark, setIsDark] = useState(location.state?.isDark ?? true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const scannerRef = useRef(null);
-  const progressIntervalRef = useRef(null);
-
-  useEffect(() => {
-    startScanner();
-    return () => {
-      stopScanner();
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const startScanner = async () => {
-    try {
-      const scanner = new Html5Qrcode("qr-reader");
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 280, height: 280 }
-        },
-        (decodedText) => {
-          handleBarcodeScanned(decodedText);
-        },
-      );
-      
-      setCameraPermission(true);
-    } catch (err) {
-      console.error("Camera error:", err);
-      setCameraPermission(false);
-      setErrorMessage("Unable to access camera. Please grant camera permissions.");
-    }
+  const theme = isDark ? darkTheme : lightTheme;
+  
+  const handleVerify = () => {
+    navigate('/onboard', { state: { isDark } });
   };
-
-  const stopScanner = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch (err) {
-        console.error("Error stopping scanner:", err);
-      }
-    }
-  };
-
-  const handleBarcodeScanned = async (data) => {
-    if (isScanning) return;
-    
-    setIsScanning(true);
-    await stopScanner();
-    
-    // Simulate scanning progress
-    let progress = 0;
-    progressIntervalRef.current = setInterval(() => {
-      progress += 10;
-      setScanProgress(progress);
-      
-      if (progress >= 100) {
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-        }
-        setIsScanning(false);
-        console.log('QR Code scanned:', data);
-      }
-    }, 200);
-  };
-
-  const requestPermission = async () => {
-    await startScanner();
-  };
-
-  if (cameraPermission === false) {
-    return (
-      <div 
-        className="min-h-screen flex flex-col items-center justify-center px-6"
-        style={{ backgroundColor: theme.background }}
-      >
-        <p 
-          className="text-center mb-4"
-          style={{ color: theme.text }}
-        >
-          {errorMessage || "We need camera permission to scan QR codes"}
-        </p>
-        <button 
-          onClick={requestPermission}
-          className="py-3 px-6 rounded-lg font-semibold text-white"
-          style={{ backgroundColor: theme.button }}
-        >
-          Grant Permission
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div 
-      className="fixed inset-0 w-full h-full overflow-hidden"
-      style={{ backgroundColor: theme.background }}
+    <div
+      className="min-h-screen flex flex-col px-6 pt-4"
+      style={{ backgroundColor: theme.background1 }}
     >
       {/* Header */}
-      <div className="absolute top-12 left-0 right-0 flex justify-between items-center px-6 z-20">
-        <button 
+      <div className="absolute top-8 left-0 right-0 flex justify-between items-center px-6 z-20">
+        <button
           className="p-1"
-          onClick={() => navigate('/scanqrScreen')}
+          onClick={() => navigate('/scanqr', { state: { isDark } })}
           style={{ color: theme.text }}
         >
           <ChevronLeft size={24} />
         </button>
 
-        <h1 
+        <h1
           className="text-lg font-semibold"
           style={{ color: theme.text }}
         >
           Verification
         </h1>
 
-        <button 
-          onClick={() => setIsDark(!isDark)}
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ color: theme.text }}
-        >
-          {isDark ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
-      </div> 
-
-      {/* Brand Logo */}
-      <div className="absolute top-28 left-0 right-0 flex justify-center items-center z-20">
-        <img 
-          src={isDark ? require('../assets/Abbott_logo-dark.png') : require('../assets/Abbott_logo-light.png')} 
-          alt="Abbott Logo" 
-          className="h-8 w-auto object-contain" 
-        />
-      </div>
-
-      {/* QR Scanner - Full Screen */}
-      <div className="absolute inset-0 w-full h-full z-0">
-        <div id="qr-reader" className="w-full h-full"></div>
-
-        {/* Scanner Frame Overlay */}
-        <div className="absolute top-1/2 left-1/2 w-70 h-70 -ml-35 -mt-35 pointer-events-none z-10" style={{ width: '280px', height: '280px', marginLeft: '-140px', marginTop: '-140px' }}>
-          {/* Top Left Corner */}
-          <div 
-            className="absolute top-0 left-0 w-15 h-15"
-            style={{ 
-              width: '60px', 
-              height: '60px',
-              borderTop: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderLeft: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderTopLeftRadius: '8px'
-            }}
-          />
-
-          {/* Top Right Corner */}
-          <div 
-            className="absolute top-0 right-0 w-15 h-15"
-            style={{ 
-              width: '60px', 
-              height: '60px',
-              borderTop: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderRight: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderTopRightRadius: '8px'
-            }}
-          />
-
-          {/* Bottom Left Corner */}
-          <div 
-            className="absolute bottom-0 left-0 w-15 h-15"
-            style={{ 
-              width: '60px', 
-              height: '60px',
-              borderBottom: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderLeft: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderBottomLeftRadius: '8px'
-            }}
-          />
-
-          {/* Bottom Right Corner */}
-          <div 
-            className="absolute bottom-0 right-0 w-15 h-15"
-            style={{ 
-              width: '60px', 
-              height: '60px',
-              borderBottom: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderRight: `4px solid ${isDark ? theme.text : '#FFFFFF'}`,
-              borderBottomRightRadius: '8px'
-            }}
-          />
-
-          {/* Scanning Line Animation */}
-          {isScanning && (
-            <div 
-              className="absolute top-0 left-0 right-0 h-1 animate-scan"
-              style={{
-                height: '3px',
-                backgroundColor: '#00A3E0',
-                opacity: 0.9,
-                boxShadow: '0 0 8px rgba(0, 163, 224, 0.8)',
-                animation: 'scan 2s linear infinite'
-              }}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Scanning Progress */}
-      <div className="absolute bottom-16 left-0 right-0 flex justify-center z-20">
-        <div 
-          className="py-3 px-12 rounded-full border backdrop-blur-sm"
-          style={{ 
-            borderColor: theme.subText,
-            backgroundColor: 'rgba(0, 0, 0, 0.3)'
-          }}
-        >
-          <p 
-            className="text-sm font-medium"
-            style={{ color: '#FFFFFF' }}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="w-10 h-10 rounded-full hidden md:flex items-center justify-center"
+            style={{ color: theme.text }}
           >
-            Scanning {scanProgress}%
-          </p>
+            <Menu size={20} />
+          </button>
+
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ color: theme.text }}
+          >
+            {isDark ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
         </div>
       </div>
 
-      <style>{`
-        @keyframes scan {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(280px); }
-        }
-        
-        #qr-reader video {
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: cover !important;
-        }
-        
-        #qr-reader {
-          border: none !important;
-          width: 100% !important;
-          height: 100% !important;
-        }
-        
-        #qr-reader > div {
-          border: none !important;
-        }
-      `}</style>
+      {/* Menu Sidebar */}
+      <MenuSidebar 
+        theme={theme} 
+        isDark={isDark} 
+        isOpen={isMenuOpen} 
+        onClose={() => setIsMenuOpen(false)} 
+      />
+
+      {/* Main Content*/}
+      <div className="flex flex-col md:flex-row gap-4 mt-20 w-full">
+        {/* Authenticated Image */}
+        <div
+          className="flex flex-col items-center justify-center text-center px-2 py-4 w-full  h-auto rounded-lg"
+          style={{ backgroundColor: theme.background2, borderColor: theme.stroke, borderWidth: 1 }}
+        >
+          <div className="flex flex-col items-center justify-center text-center w-full max-w-md h-auto relative">
+            <div
+              className="absolute top-2 left-4 px-3 py-1 rounded-2xl font-semibold text-sm z-10"
+              style={{ backgroundColor: theme.labelbg, color: theme.textgreen, borderColor: theme.labelstroke, borderWidth: 1 }}
+            >
+              Authentic
+            </div>
+            <img src={QRImage} alt="QR Code" className="w-full h-auto object-contain" />
+            <div
+              className="absolute bottom-2 left-4 px-3 py-1 rounded-lg text-sm text-left text-white z-10"
+              style={{ backgroundColor: 'rgba(22, 22, 31, 0.7)' }}
+            >
+              <p className="font-semibold">iPhone 15 pro</p>
+              <p className="font-regular">Model Number: A3102</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Verified Label and Product Details */}
+        <div className="flex flex-col w-full md:w-1/2">
+          {/* Verified Label */}
+          <div className="flex flex-row items-center justify-start text-left px-4 py-4 w-full h-auto rounded-lg gap-4"
+            style={{ backgroundColor: theme.labelbg, color: theme.textgreen, borderColor: theme.labelstroke, borderWidth: 1 }}>
+            <div className="flex items-center justify-center w-16 h-16 rounded-full flex-shrink-0"
+              style={{ backgroundColor: theme.labelstroke }}>
+              <div className="flex items-center justify-center w-12 h-12 rounded-full"
+                style={{ backgroundColor: theme.textgreen }}>
+                <CheckIcon size={24} className="text-white" />
+              </div>
+            </div>
+            <div className="text-left flex-1">
+              <p className="font-semibold">Verified Product</p>
+              <p className="font-regular text-sm">This product is authentic and registered</p>
+            </div>
+          </div>
+
+          {/* Product Details */}
+          <div className="flex flex-col items-start justify-start text-left px-4 py-4 w-full mt-4 h-auto rounded-lg gap-4"
+            style={{ backgroundColor: theme.background2, borderColor: theme.stroke, borderWidth: 1 }}>
+            <p className="font-semibold text-lg mb-2" style={{ color: theme.text }}>Product Details</p>
+            <p className="font-regular" style={{ color: theme.text }}> <p className="text-sm" style={{ color: theme.gray }}>Serial Number:</p> F2L9Q3X7N6Y8</p>
+            <p className="font-regular" style={{ color: theme.text }}> <p className="text-sm" style={{ color: theme.gray }}>GTIN / EAN:</p> 0195949123456</p>
+            <p className="font-regular" style={{ color: theme.text }}> <p className="text-sm" style={{ color: theme.gray }}>Manufacturer:</p> Apple Inc.</p>
+            <p className="font-regular" style={{ color: theme.text }}> <p className="text-sm" style={{ color: theme.gray }}>Manufacture Date:</p> 2024-09-18</p>
+            <p className="font-regular" style={{ color: theme.text }}> <p className="text-sm" style={{ color: theme.gray }}>Market Region:</p>Europe (EU)</p>
+            <p className="font-regular" style={{ color: theme.text }}> <p className="text-sm" style={{ color: theme.gray }}>DPP Version:</p>DPP-1.0</p>
+          </div>
+        </div>
+      </div>
+
+       {/* Bottom Navigation */}
+            <BottomNavbar theme={theme} isDark={isDark} />
+
     </div>
   );
-};
+
+}
 
 export default VerificationScreen;
